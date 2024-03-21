@@ -39,4 +39,18 @@ class FastaStringExtractor:
 # One hot encode DNA sequence
 def one_hot_encode(sequence):
     return kipoiseq.transforms.functional.one_hot_dna(sequence).astype(np.float32)
-        
+
+# Return all mutations
+def edit_distance_one(seq_onehot):
+
+	if seq_onehot.ndim==2:
+		seq_onehot = np.expand_dims(seq_onehot,0)
+
+	edited_onehots = np.tile(seq_onehot[0], (seq_onehot.shape[1]*seq_onehot.shape[-1], 1,1))
+
+	coords = itertools.product(range(seq_onehot.shape[1]), range(seq_onehot.shape[-1]))
+	for i, (j, k) in enumerate(coords):
+		edited_onehots[i, j, :] = 0
+		edited_onehots[i, j, k] = 1
+
+	return edited_onehots
