@@ -3,6 +3,7 @@ import argparse
 
 from tqdm.auto import tqdm
 
+import numpy as np
 import pandas as pd
 
 from _utils import FastaStringExtractor
@@ -112,22 +113,21 @@ if __name__=='__main__':
 
     # Make sure output path exists
     if args.output_path is not None:
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
 
-    edit_record = main(args.model_path, args.output_path, 
-                       args.fasta_file, args.chromosome, 
-                       args.insert_coord, args.insert_sequence)
+    edit_record = main(args.model_path, args.fasta_file, args.chromosome, 
+                       args.insert_coord, args.insert_sequence, output_path=args.output_path)
 
     # Save output to file
     if args.output_path is not None:
-        edit_record.to_csv(output_path, sep='\t')
+        edit_record.to_csv(args.output_path, sep='\t')
 
         # Save plots
         fig, axs = plt.subplots(ncols=2)
         plot_fitness(edit_record, ax=axs[0])
         plot_temp_scaling(edit_record, ax=axs[1])
 
-        plt.savefig(output_path.split('.')[0]+'.png')
+        plt.savefig(args.output_path.split('.')[0]+'.png')
 
 
 
