@@ -123,12 +123,13 @@ if __name__=='__main__':
         edit_record.to_csv(args.output_path, sep='\t')
 
         # Save plots
-        fig, axs = plt.subplots(ncols=2)
+        fig, axs = plt.subplots(ncols=2,figsize=(12, 6))
         plot_fitness(edit_record, ax=axs[0])
         plot_temp_scaling(edit_record, ax=axs[1])
+        plt.subplots_adjust(wspace=0.4)
+
+        # Set a title for the plot
+        axs[0].set_title('Fitness Plot')
+        axs[1].set_title('Temperature Plot')
 
         plt.savefig(args.output_path.split('.')[0]+'.png')
-
-
-
-

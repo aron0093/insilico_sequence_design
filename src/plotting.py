@@ -1,24 +1,26 @@
 import pandas as pd
 import logomaker
-
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-# Plot fitness per iteration
 def plot_fitness(*edit_records, ax=None):
-
+    
     # Setup axes
     if ax is None:
-        ax=plt.subplot()
-    
+        ax = plt.subplot()
+
     # Plot fitness per iteration
     for edit_record in edit_records:
+
+        edit_record['fitness'] = edit_record['fitness'].apply(lambda x: float(str(x).replace('[', '').replace(']', '')))
+    
         sns.lineplot(x='iteration', 
-                        y='fitness', 
-                        data=edit_record,
-                        ax=ax)
-        ax.set_xlabel('Iterations')
-        ax.set_ylabel('Fitness')
+                     y='fitness', 
+                     data=edit_record,
+                     ax=ax)
+        
+    ax.set_xlabel('Iterations')
+    ax.set_ylabel('Fitness')
     
     return ax
 
@@ -28,14 +30,14 @@ def plot_temp_scaling(edit_record, ax=None):
     # Setup axes
     if ax is None:
         ax=plt.subplot()
-    
+        
     # Plot fitness per iteration
     sns.lineplot(x='iteration', 
                     y='temperature', 
                     data=edit_record,
                     ax=ax)
     ax.set_xlabel('Iterations')
-    ax.set_ylabel('Fitness')
+    ax.set_ylabel('Temperature')
     
     return ax
 
@@ -69,5 +71,3 @@ def plot_scores(scores, ax=None):
                       logo.ax.get_xlim()[1]])
 
     return ax
-
-
