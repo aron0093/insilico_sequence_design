@@ -6,6 +6,15 @@ from tensorflow.keras.utils import get_custom_objects
 
 import chrombpnet.training.utils.losses as losses
 
+import shap
+import tensorflow as tf
+# disable eager execution so shap deep explainer wont break
+tf.compat.v1.disable_eager_execution()
+
+import chrombpnet.evaluation.interpret.shap_utils as shap_utils
+import chrombpnet.evaluation.interpret.input_utils as input_utils
+from chrombpnet.evaluation.interpret.interpret import generate_shap_dict
+
 def load_trained_model(model_path):
     
     '''
@@ -42,7 +51,7 @@ def check_sequence(sequence_onehot):
     
     return sequence_onehot
 
-def predict_accessibility(sequence_onehot, model):
+def predict_accessibility(sequence_onehot, model, mode='profile'):
 
     '''
     Predict mean profile head output.
@@ -50,8 +59,12 @@ def predict_accessibility(sequence_onehot, model):
     '''
     sequence_onehot = check_sequence(sequence_onehot)
 
-    prediction = model.predict_on_batch(sequence_onehot)[0]
-    prediction = prediction.mean(axis=-1)
+    if mode=='profile':
+        prediction = model.predict_on_batch(sequence_onehot)[0]
+        prediction = prediction.mean(axis=-1)
+    elif mode=='count':
+        prediction = model.predict_on_batch(sequence_onehot)[1]
+        prediction=prediction.flatten()[0]
 
     return prediction
 
@@ -80,5 +93,5 @@ def compute_attribution(sequence_onehot, model, mode='scoring'):
     profile_shap_scores = profile_model_profile_explainer.shap_values(profile_input, progress_message=100)
     profile_scores_dict = generate_shap_dict(sequence_onehot, profile_shap_scores)
 
-    if mode=='scoring': return profile_scores_dict['projected_shap']['seq'].sum(1)[:, 996:1016].mean(-1)
+    if mode=='scoring': return profile_scores_dict['projected_shap']['seq'].sum(1).mean(-1)
     else: return profile_scores_dict['projected_shap']['seq']
