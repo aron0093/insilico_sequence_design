@@ -14,9 +14,9 @@ def plot_fitness(*edit_records, ax=None):
     # Plot fitness per iteration
     for edit_record in edit_records:
         sns.lineplot(x='iteration', 
-                        y='fitness', 
-                        data=edit_record,
-                        ax=ax)
+                     y='fitness', 
+                     data=edit_record,
+                     ax=ax)
         ax.set_xlabel('Iterations')
         ax.set_ylabel('Fitness')
     

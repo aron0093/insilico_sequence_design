@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 from models.chromBPNet import load_trained_model, predict_accessibility
 
 # Function for running simulated annealing to design a number of sequence edits based on model predictions
-def main(model_path,
+def main(*model_paths,
          fasta_file,
          chromosome,
          insert_coord,
@@ -56,7 +56,7 @@ def main(model_path,
     fitness_ = [1.]
     score_ = [1.]
 
-    model = load_trained_model(model_path)
+    models = [load_trained_model(model_path) for model_path in model_paths]
 
     # Initialise annealing
     annealing = run_simulated_annealing(predict_accessibility,
@@ -74,7 +74,7 @@ def main(model_path,
                           max_edited_bp=max_edited_bp, 
                           max_overwritten_wt_bp=max_overwritten_wt_bp, 
                           insert_offset_range=insert_offset_range, 
-                          model=model)
+                          models=models)
 
         # Save steps
         temperature_.append(annealing.temperature)
@@ -102,11 +102,12 @@ if __name__=='__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('model_path', type=str)
-    parser.add_argument('fasta_file', type=str)
-    parser.add_argument('chromosome', type=str)
-    parser.add_argument('insert_coord', type=int)
+    parser.add_argument('model_paths', nargs='+', type=str)
+    parser.add_argument('--fasta_file', type=str)
+    parser.add_argument('--chromosome', type=str)
+    parser.add_argument('--insert_coord', type=int)
     parser.add_argument('--insert_sequence', default=None, type=str)
+    parser.add_argument('--num_iters', default=1000, type=int)
     parser.add_argument('-o','--output_path', default=None, type=str)
 
     args = parser.parse_args()
@@ -115,15 +116,16 @@ if __name__=='__main__':
     if args.output_path is not None:
         os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
 
-    edit_record = main(args.model_path, args.fasta_file, args.chromosome, 
-                       args.insert_coord, args.insert_sequence, output_path=args.output_path)
+    edit_record = main(*args.model_paths, fasta_file=args.fasta_file, chromosome=args.chromosome, 
+                       insert_coord=args.insert_coord, insert_sequence=args.insert_sequence, n_iters=args.num_iters,
+                       output_path=args.output_path)
 
     # Save output to file
     if args.output_path is not None:
         edit_record.to_csv(args.output_path, sep='\t')
 
         # Save plots
-        fig, axs = plt.subplots(ncols=2)
+        fig, axs = plt.subplots(ncols=2, figsize=(15,7))
         plot_fitness(edit_record, ax=axs[0])
         plot_temp_scaling(edit_record, ax=axs[1])
 

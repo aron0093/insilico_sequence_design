@@ -51,7 +51,7 @@ def check_sequence(sequence_onehot):
     
     return sequence_onehot
 
-def predict_accessibility(sequence_onehot, model, mode='profile'):
+def predict_accessibility(sequence_onehot, models=None, mode='count'):
 
     '''
     Predict mean profile head output.
@@ -59,12 +59,21 @@ def predict_accessibility(sequence_onehot, model, mode='profile'):
     '''
     sequence_onehot = check_sequence(sequence_onehot)
 
-    if mode=='profile':
-        prediction = model.predict_on_batch(sequence_onehot)[0]
-        prediction = prediction.mean(axis=-1)
-    elif mode=='count':
-        prediction = model.predict_on_batch(sequence_onehot)[1]
-        prediction=prediction.flatten()[0]
+    if not isinstance(models, (list, tuple, np.ndarray)):
+        models = [models]
+
+    predictions=[]
+    for model in models:
+
+        if mode=='profile':
+            prediction = model.predict_on_batch(sequence_onehot)[0]
+            prediction = prediction.mean(axis=-1)
+        elif mode=='count':
+            prediction = model.predict_on_batch(sequence_onehot)[1]
+            prediction=prediction.flatten()[0]
+        predictions.append(prediction)
+    
+    prediction = np.mean(predictions)
 
     return prediction
 
