@@ -71,13 +71,13 @@ def predict_accessibility(sequence_onehot, models=None, mode='count'):
         elif mode=='count':
             prediction = model.predict_on_batch(sequence_onehot)[1]
             prediction=prediction.flatten()[0]
-        predictions.append(prediction)
+        predictions.append(np.exp(prediction))
     
     prediction = np.mean(predictions)
 
     return prediction
 
-def compute_attribution(sequence_onehot, model, mode='scoring'):
+def compute_attribution(sequence_onehot, models=None, mode='scoring'):
 
     '''
     Compute DeepSHAP attribution.
@@ -86,21 +86,31 @@ def compute_attribution(sequence_onehot, model, mode='scoring'):
     
     sequence_onehot = check_sequence(sequence_onehot)
 
-    outlen = model.output_shape[0][1]
+    if not isinstance(models, (list, tuple, np.ndarray)):
+        models = [models]
 
-    profile_model_input = model.input
-    profile_input = sequence_onehot
-    counts_model_input = model.input
-    counts_input = sequence_onehot
+    profile_scores_dicts = []
+    for model in models:
 
-    weightedsum_meannormed_logits = shap_utils.get_weightedsum_meannormed_logits(model)
-    profile_model_profile_explainer = shap.explainers.deep.TFDeepExplainer(
-                                      (profile_model_input, weightedsum_meannormed_logits),
-                                       shap_utils.shuffle_several_times,
-                                       combine_mult_and_diffref=shap_utils.combine_mult_and_diffref)
+        outlen = model.output_shape[0][1]
 
-    profile_shap_scores = profile_model_profile_explainer.shap_values(profile_input, progress_message=100)
-    profile_scores_dict = generate_shap_dict(sequence_onehot, profile_shap_scores)
+        profile_model_input = model.input
+        profile_input = sequence_onehot
+        counts_model_input = model.input
+        counts_input = sequence_onehot
 
-    if mode=='scoring': return profile_scores_dict['projected_shap']['seq'].sum(1).mean(-1)
-    else: return profile_scores_dict['projected_shap']['seq']
+        weightedsum_meannormed_logits = shap_utils.get_weightedsum_meannormed_logits(model)
+        profile_model_profile_explainer = shap.explainers.deep.TFDeepExplainer(
+                                        (profile_model_input, weightedsum_meannormed_logits),
+                                        shap_utils.shuffle_several_times,
+                                        combine_mult_and_diffref=shap_utils.combine_mult_and_diffref)
+
+        profile_shap_scores = profile_model_profile_explainer.shap_values(profile_input, progress_message=100)
+        profile_scores_dict = generate_shap_dict(sequence_onehot, profile_shap_scores)
+
+        profile_scores_dicts.append(profile_scores_dict)
+
+    if mode=='scoring': 
+        return np.mean([profile_scores_dict['projected_shap']['seq'].sum(1).mean(-1) for profile_scores_dict in profile_scores_dicts])
+    else: 
+        return [profile_scores_dict['projected_shap']['seq'] for profile_scores_dict in profile_scores_dicts]
