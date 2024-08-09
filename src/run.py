@@ -38,10 +38,11 @@ def main(*model_paths,
 
 
     # Extract reference sequence
+    window_padding=100
     fse = FastaStringExtractor(fasta_file)
     ref_seq = extract_refseq(chromosome, insert_coord, 
                              fasta=fse, model_window=2114,
-                             window_padding=100)
+                             window_padding=window_padding)
 
     # Make randomn insert sequence
     if insert_sequence is None:
@@ -83,13 +84,16 @@ def main(*model_paths,
         score_.append(annealing.score)
 
         edit_record = pd.DataFrame(edit_history_, columns=['reference_sequence', 
-                                                        'insert_sequence', 
-                                                        'insert_offset', 
-                                                        'overwritten_wildtype_basepairs'])
+                                                           'insert_sequence', 
+                                                           'insert_offset', 
+                                                           'overwritten_wildtype_basepairs'])
         edit_record.index.name = 'iteration'
+
+        edit_record['reference_sequence'] = edit_record['reference_sequence'].apply(lambda x: x[window_padding: -window_padding])
         edit_record['fitness'] = fitness_
         edit_record['score'] = score_
         edit_record['temperature'] = temperature_
+        edit_record['objective'] = objective
 
         # Save output at each iteration
         if output_path is not None:
