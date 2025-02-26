@@ -13,13 +13,17 @@ from _annealing import run_simulated_annealing
 from plotting import plot_fitness, plot_temp_scaling
 from matplotlib import pyplot as plt
 
-from models.chromBPNet import load_trained_model, predict_accessibility
+from models.chromBPNet import load_trained_model as load_chrombpnet_model
+from models.chromBPNet import predict_accessibility
+from models.proCapNet import load_trained_model as load_procapnet_model
+from models.proCapNet import predict_transcription
 
 # Function for running simulated annealing to design a number of sequence edits based on model predictions
 def main(*model_paths,
          fasta_file,
          chromosome,
          insert_coord,
+         model_type='chrombpnet',
          insert_sequence=None,
          objective='max',
          clip_prob=0.9,
@@ -57,10 +61,15 @@ def main(*model_paths,
     fitness_ = [1.]
     score_ = [1.]
 
-    models = [load_trained_model(model_path) for model_path in model_paths]
+    if model_type=='chrombpnet':
+        models = [load_chrombpnet_model(model_path) for model_path in model_paths]
+        predict_func = predict_accessibility
+    elif model_type=='procapnet':
+        models = [load_procapnet_model(model_path) for model_path in model_paths]        
+        predict_func = predict_transcription
 
     # Initialise annealing
-    annealing = run_simulated_annealing(predict_accessibility,
+    annealing = run_simulated_annealing(predict_func,
                                         init_bundle, action_probs,
                                         init_fitness=fitness_[0])
 
@@ -107,6 +116,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('model_paths', nargs='+', type=str)
+    parser.add_argument('--model_type', type=str, default='chrombpnet')
     parser.add_argument('--fasta_file', type=str)
     parser.add_argument('--chromosome', type=str)
     parser.add_argument('--insert_coord', type=int)
@@ -120,7 +130,7 @@ if __name__=='__main__':
     if args.output_path is not None:
         os.makedirs(os.path.dirname(args.output_path), exist_ok=True)
 
-    edit_record = main(*args.model_paths, fasta_file=args.fasta_file, chromosome=args.chromosome, 
+    edit_record = main(*args.model_paths, model_type=args.model_type, fasta_file=args.fasta_file, chromosome=args.chromosome, 
                        insert_coord=args.insert_coord, insert_sequence=args.insert_sequence, n_iters=args.num_iters,
                        output_path=args.output_path)
 
