@@ -13,10 +13,10 @@ from _annealing import run_simulated_annealing
 from plotting import plot_fitness, plot_temp_scaling
 from matplotlib import pyplot as plt
 
-from models.chromBPNet import load_trained_model as load_chrombpnet_model
-from models.chromBPNet import predict_accessibility
-from models.proCapNet import load_trained_model as load_procapnet_model
-from models.proCapNet import predict_transcription
+from models.chrombpnet_ import load_trained_model as load_chrombpnet_model
+from models.chrombpnet_ import predict_accessibility
+from models.procapnet_ import load_trained_model as load_procapnet_model
+from models.procapnet_ import predict_transcription
 
 # Function for running simulated annealing to design a number of sequence edits based on model predictions
 def main(*model_paths,
@@ -116,7 +116,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('model_paths', nargs='+', type=str)
-    parser.add_argument('--model_type', type=str, default='chrombpnet')
+    parser.add_argument('--model_type', choices=['chrombpnet', 'procapnet'], default='chrombpnet')
     parser.add_argument('--fasta_file', type=str)
     parser.add_argument('--chromosome', type=str)
     parser.add_argument('--insert_coord', type=int)

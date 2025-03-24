@@ -68,6 +68,6 @@ def saturation_mutagenesis(predict_func, model, seq_onehot,
 
 	y0 = predict_func(seq_onehot, model)
 	X_ = edit_distance_one(seq_onehot, model_window)
-	y_hat = predict_func(X_, model=model)
+	y_hat = predict_func(X_, model)
 
 	return y0, y_hat
