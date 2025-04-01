@@ -2,6 +2,9 @@ import torch
 import numpy as np
 from .utils import check_bpnet_sequence
 
+from BPNet_strand_merged_umap import Model
+from deepshap_utils import *
+
 import sys # Place PROCapNet repo in PATH
 sys.path.append('procapnet/ProCapNet/src/2_train_models/')
 sys.path.append('procapnet/ProCapNet/src/4_interpret_models/')
@@ -57,14 +60,14 @@ def predict_transcription(sequence_onehot, models=None, strand=0, cuda=False):
 
     return prediction
 
-def compute_attribution(sequence_onehot, models=None, mode='scoring', is_stranded=True, cuda=False):
+def compute_attribution(sequence_onehot, models=None, num_shufs=25, mode='scoring', is_stranded=True, cuda=False):
 
     '''
     Compute DeepSHAP attribution.
     
     '''
  
-    sequence_onehot = check_sequence(sequence_onehot)
+    sequence_onehot = check_bpnet_sequence(sequence_onehot)
     sequence_onehot = sequence_onehot.transpose(0,-1,1)
 
     if not isinstance(models, (list, tuple, np.ndarray)):
@@ -78,7 +81,7 @@ def compute_attribution(sequence_onehot, models=None, mode='scoring', is_strande
         count_attrs = []
 
         with torch.no_grad():
-            for i in trange(len(sequence_onehot)):
+            for i in range(len(sequence_onehot)):
                 if is_stranded:
                     prof_explainer = DeepLiftShap(StrandedProfileModelWrapper(model))
                     count_explainer = DeepLiftShap(StrandedCountsModelWrapper(model))

@@ -51,13 +51,13 @@ def predict_accessibility(sequence_onehot, models=None, mode='count'):
             prediction = prediction.mean(axis=-1)
         elif mode=='count':
             prediction = model.predict_on_batch(sequence_onehot)[1]
-            prediction=prediction.flatten()
+            prediction = prediction.flatten()
         predictions.append(np.exp(prediction))
     
     if len(models)>1:
-        prediction = np.mean(np.array(predictions), 0)
+        prediction = np.mean(np.array(predictions), 0)[0]
     else:
-        prediction=predictions[0]
+        prediction = predictions[0]
 
     return prediction
 
