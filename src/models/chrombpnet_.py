@@ -61,7 +61,7 @@ def predict_accessibility(sequence_onehot, models=None, mode='count'):
 
     return prediction
 
-def compute_attribution(sequence_onehot, models=None, mode='scoring'):
+def compute_attribution(sequence_onehot, models=None, mode='scoring', typ='counts'):
 
     '''
     Compute DeepSHAP attribution.
@@ -74,15 +74,29 @@ def compute_attribution(sequence_onehot, models=None, mode='scoring'):
         models = [models]
 
     profile_scores_dicts = []
+    counts_scores_dicts = []
     for model in models:
 
         outlen = model.output_shape[0][1]
 
         profile_model_input = model.input
         profile_input = sequence_onehot
+
         counts_model_input = model.input
         counts_input = sequence_onehot
 
+        # Count attributions
+        profile_model_counts_explainer = shap.explainers.deep.TFDeepExplainer(
+            (counts_model_input, tf.reduce_sum(model.outputs[1], axis=-1)),
+            shap_utils.shuffle_several_times,
+            combine_mult_and_diffref=shap_utils.combine_mult_and_diffref)
+
+        counts_shap_scores = profile_model_counts_explainer.shap_values(counts_input, progress_message=100)
+        counts_scores_dict = generate_shap_dict(sequence_onehot, counts_shap_scores)
+
+        counts_scores_dicts.append(counts_scores_dict)
+
+        # Profile attributions
         weightedsum_meannormed_logits = shap_utils.get_weightedsum_meannormed_logits(model)
         profile_model_profile_explainer = shap.explainers.deep.TFDeepExplainer(
                                         (profile_model_input, weightedsum_meannormed_logits),
@@ -94,7 +108,12 @@ def compute_attribution(sequence_onehot, models=None, mode='scoring'):
 
         profile_scores_dicts.append(profile_scores_dict)
 
+    if typ=='counts':
+        return_dicts = counts_scores_dicts
+    elif typ=='profile':
+        return_dicts = profile_scores_dicts
+
     if mode=='scoring': 
-        return np.mean([profile_scores_dict['projected_shap']['seq'].sum(1).mean(-1) for profile_scores_dict in profile_scores_dicts])
+        return np.mean([return_dict['projected_shap']['seq'].sum(1).mean(-1) for return_dict in return_dicts])
     else: 
-        return [profile_scores_dict['projected_shap']['seq'] for profile_scores_dict in profile_scores_dicts]
+        return [return_dict['projected_shap']['seq'] for return_dict in return_dicts]

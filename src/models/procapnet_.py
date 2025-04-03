@@ -60,7 +60,9 @@ def predict_transcription(sequence_onehot, models=None, strand=0, cuda=False):
 
     return prediction
 
-def compute_attribution(sequence_onehot, models=None, num_shufs=25, mode='scoring', is_stranded=True, cuda=False):
+def compute_attribution(sequence_onehot, models=None, num_shufs=25, 
+                        mode='scoring', typ='counts', 
+                        is_stranded=True, cuda=False):
 
     '''
     Compute DeepSHAP attribution.
@@ -125,8 +127,13 @@ def compute_attribution(sequence_onehot, models=None, num_shufs=25, mode='scorin
         profile_scores_dicts.append(prof_attrs)
         count_scores_dicts.append(count_attrs)
 
+    if typ=='counts':
+        return_dicts = count_scores_dicts
+    elif typ=='profile':
+        return_dicts = profile_scores_dicts
+
     if mode=='scoring': 
         raise NotImplemnetedError()
     else: 
-        return count_scores_dicts
+        return return_dicts
 
