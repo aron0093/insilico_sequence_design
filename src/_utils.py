@@ -41,6 +41,13 @@ class FastaStringExtractor:
 def one_hot_encode(sequence):
     return kipoiseq.transforms.functional.one_hot_dna(sequence).astype(np.float32)
 
+# Make reverse complement
+def reverse_complement(seq):
+    complement = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C'}
+    seq = seq[::-1]
+    seq = ''.join([complement[base] for base in seq])
+    return seq
+
 # Return all mutations
 def edit_distance_one(seq_onehot, model_window=None):
 
