@@ -1,6 +1,9 @@
 import torch
 import numpy as np
 
+import sys # Adjust PATH or install 
+sys.path.append('../../../decima/src/decima')
+
 from lightning import LightningModel
 
 def check_decima_sequence(decima_sequence_onehot, add_mask=None):
@@ -76,8 +79,12 @@ def predict_expression(decima_sequence_onehot, models=None, add_mask=None, sampl
     
     prediction = np.squeeze(prediction,-1)
 
+    # Average over sample heads
     if mode=='scoring':
         prediction = np.mean(prediction,-1)
+
+    # Single-sample #TODO: Implement batch processing
+    prediction = prediction[0]
 
     return prediction
 
@@ -93,8 +100,6 @@ def compute_attribution(sequence_onehot, models=None, strand=0, cuda=False):
     # Adapt from src/decima/interpret.py
 
     raise NotImplementedError()
-
-
 
 
 
