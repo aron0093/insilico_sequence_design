@@ -49,7 +49,7 @@ def reverse_complement(seq):
     return seq
 
 # Return all mutations
-def edit_distance_one(seq_onehot, model_window=None):
+def edit_distance_one(seq_onehot, model_window=None, start_coord=None):
 
     if seq_onehot.ndim==2:
         seq_onehot = np.expand_dims(seq_onehot,0)
@@ -63,18 +63,27 @@ def edit_distance_one(seq_onehot, model_window=None):
 
     coords = itertools.product(range(seq_shape_), range(seq_onehot.shape[-1]))
     for i, (j, k) in enumerate(coords):
-        edited_onehots[i, j, :] = 0
-        edited_onehots[i, j, k] = 1
+        if start_coord is not None:
+            j_ = j+start_coord
+        else:
+            j_=j
+        edited_onehots[i, j_, :] = 0
+        edited_onehots[i, j_, k] = 1
 
     return edited_onehots
 
 # Perform ISM with some seq to effect prediction function
-def saturation_mutagenesis(predict_func, model, seq_onehot, 
-                           model_window=2114, batch_size=32, 
-						   **kwargs):
+def saturation_mutagenesis(predict_func, models, seq_onehot, 
+                           model_window=2114, start_coord=None, 
+                           batch_size=32, **kwargs):
 
-	y0 = predict_func(seq_onehot, model)
+	y0 = predict_func(seq_onehot, models=models, **kwargs)
 	X_ = edit_distance_one(seq_onehot, model_window)
-	y_hat = predict_func(X_, model)
 
-	return y0, y_hat
+    #TODO: Enable batch processing in predict_func
+	y_hats = []
+	for idx in range(X_.shape[0]):
+		y_hat = predict_func(X_[idx], models=models, **kwargs)
+		y_hats.append(y_hat)
+
+	return y0, y_hats
