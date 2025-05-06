@@ -2,14 +2,13 @@ import torch
 import numpy as np
 from .utils import check_bpnet_sequence
 
+import sys # Adjust PATH or install
+sys.path.append('../../../procapnet/ProCapNet/src/2_train_models/')
+sys.path.append('../../../procapnet/ProCapNet/src/4_interpret_models/')
+sys.path.append('../../../procapnet/ProCapNet/src/utils/')
+
 from BPNet_strand_merged_umap import Model
 from deepshap_utils import *
-
-import sys # Place PROCapNet repo in PATH
-sys.path.append('procapnet/ProCapNet/src/2_train_models/')
-sys.path.append('procapnet/ProCapNet/src/4_interpret_models/')
-sys.path.append('procapnet/ProCapNet/src/utils/')
-
 
 def load_trained_model(model_path, cuda=False):
     
@@ -25,6 +24,7 @@ def load_trained_model(model_path, cuda=False):
 
     return model
 
+#TODO: Modify to work with batches
 def predict_transcription(sequence_onehot, models=None, strand=0, cuda=False):
 
     '''
@@ -59,7 +59,8 @@ def predict_transcription(sequence_onehot, models=None, strand=0, cuda=False):
     prediction = np.mean(predictions)
 
     return prediction
-
+    
+#TODO: Modify to work with batches
 def compute_attribution(sequence_onehot, models=None, num_shufs=25, 
                         mode='scoring', typ='counts', 
                         is_stranded=True, cuda=False):

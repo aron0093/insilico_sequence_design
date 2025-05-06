@@ -32,6 +32,7 @@ def load_trained_model(model_path):
 
     return model
 
+#TODO: Modify to work with batches
 def predict_accessibility(sequence_onehot, models=None, mode='count'):
 
     '''
@@ -61,6 +62,7 @@ def predict_accessibility(sequence_onehot, models=None, mode='count'):
 
     return prediction
 
+#TODO: Modify to work with batches
 def compute_attribution(sequence_onehot, models=None, mode='scoring', typ='counts'):
 
     '''
