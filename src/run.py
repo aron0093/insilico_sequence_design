@@ -39,6 +39,7 @@ def main(*model_paths,
          sample_idx=None):
 
     # Setup model specific params and prediction func
+    add_args = {}
     if model_type=='chrombpnet':
 
         from models.chrombpnet_ import load_trained_model as load_chrombpnet_model
