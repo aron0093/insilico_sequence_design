@@ -19,14 +19,19 @@ def check_decima_sequence(decima_sequence_onehot, add_mask=None):
     except:
         if decima_sequence_onehot.shape[-1]==n_bases:
             decima_sequence_onehot = np.swapaxes(decima_sequence_onehot, -1,-2)
+            print('Last two axes were swapped to obtain (n_batches, n_bases, seq_len)')
 
         if decima_sequence_onehot.shape[-1]>524288:
             midpoint = int(decima_sequence_onehot.shape[-1]/2)
             decima_sequence_onehot = np.take(decima_sequence_onehot, np.arange(midpoint-int(524288/2), midpoint+int(524288/2)), -1)
+            print('Sequence was subset to center 524288 bases')
         elif decima_sequence_onehot.shape[-1]==524288:
             pass
         else:
-            raise ValueError('Input must be formatted as (n_batches, 5, n_bases)')
+            raise ValueError('Input must be formatted as (n_batches, n_bases, seq_len)')
+    
+    if len(decima_sequence_onehot.shape)==2:
+        decima_sequence_onehot = np.expand_dims(decima_sequence_onehot, 0)
     
     return decima_sequence_onehot
 
@@ -60,10 +65,11 @@ def predict_expression(decima_sequence_onehot, models=None, add_mask=None, sampl
 
         mask = np.zeros(decima_sequence_onehot.shape[-1])
         mask[mask_start:mask_end] = 1
-        mask = np.expand_dims(mask,0)
+        mask = np.expand_dims(np.expand_dims(mask,0),0)
+        mask = np.repeat(mask,decima_sequence_onehot.shape[0],0)
 
         decima_sequence_onehot = np.append(decima_sequence_onehot, 
-                                           mask, 0)
+                                           mask, 1)
 
     # This only works on a GPU
     # Make sure sequence is formatted correctly with the mask and strandedness accoutned for
