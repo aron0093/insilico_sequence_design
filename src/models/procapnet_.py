@@ -53,7 +53,8 @@ def predict_transcription(sequence_onehot, models=None, strand=0, cuda=False):
             prediction = np.exp(rc_pred_logcounts)
         else:
             prediction = np.exp(pred_logcounts) + np.exp(rc_pred_logcounts)
-        prediction = prediction/2
+            prediction = prediction/2
+
         predictions.append(prediction)
     
     prediction = np.mean(predictions)
