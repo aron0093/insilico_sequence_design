@@ -173,3 +173,50 @@ def dinuc_shuffle(seq, num_shufs=None, rng=None):
         else:
             all_results[i] = tokens_to_one_hot(chars[result], one_hot_dim)
     return all_results if num_shufs else all_results[0]
+
+# Get gene boundaries from gtf file
+def parse_gtf_attributes(attribute_string):
+    """Parse the attributes column of a GTF file."""
+    attributes = {}
+    for attribute in attribute_string.strip().split(';'):
+        if attribute:
+            key, value = attribute.strip().split(' ')
+            attributes[key] = value.replace('"', '')
+    return attributes
+
+def compute_gene_boundaries(gtf_file):
+    """Compute gene boundaries from a GTF file."""
+    gene_boundaries = {}
+
+    with open(gtf_file, 'r') as f:
+        for line in f:
+            if line.startswith('#'):
+                continue  # Skip comment lines
+
+            fields = line.strip().split('\t')
+            if len(fields) != 9:
+                continue  # Skip malformed lines
+
+            chromosome, source, feature_type, start, end, score, strand, frame, attributes = fields
+
+            if feature_type.lower() not in ['gene', 'transcript', 'exon']:
+                continue  # We're only interested in genes, transcripts, and exons
+
+            attributes_dict = parse_gtf_attributes(attributes)
+            gene_name = attributes_dict.get('gene_name', attributes_dict.get('gene_id', 'Unknown'))
+
+            start = int(start)
+            end = int(end)
+
+            if gene_name not in gene_boundaries:
+                gene_boundaries[gene_name] = {
+                    'chromosome': chromosome,
+                    'start': start,
+                    'end': end,
+                    'strand': strand
+                }
+            else:
+                gene_boundaries[gene_name]['start'] = min(gene_boundaries[gene_name]['start'], start)
+                gene_boundaries[gene_name]['end'] = max(gene_boundaries[gene_name]['end'], end)
+
+    return gene_boundaries
