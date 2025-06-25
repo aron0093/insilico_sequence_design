@@ -1,8 +1,13 @@
 import json
 from baskerville import seqnn
 
+import numpy as np
+import pandas as pd
+
 import sys # Adjust this path
-sys.path.append('../../../../../borzoi/borzoi/')
+sys.path.append('../../../../../borzoi/borzoi/examples/')
+#from borzoi_helpers import _prediction_input_grad
+#from borzoi_helpers import get_prediction_gradient
 
 def check_borzoi_sequence(sequence_onehot):
 
@@ -61,7 +66,7 @@ def load_trained_model(model_path, params_file, targets_file, rc=False):
     target_index = targets_df.index
 
     #Create local index of strand_pair (relative to sliced targets)
-    if rc :
+    if rc:
         strand_pair = targets_df.strand_pair
         target_slice_dict = {ix : i for i, ix in enumerate(target_index.values.tolist())}
         slice_pair = np.array([
@@ -71,46 +76,81 @@ def load_trained_model(model_path, params_file, targets_file, rc=False):
     model = seqnn.SeqNN(params_model)
     model.restore(model_path, 0)
     model.build_slice(target_index)
-    if rc :
+    if rc:
         model.strand_pair.append(slice_pair)
     model.build_ensemble(rc, [0])
 
     return model
 
-def predict_RNA_expression(sequence_onehot, models=None, gene_slice_idx=None, rc=False, sample_idx=None, mode='scoring'):
+def predict_func(sequence_onehot, models=None, bin_slice_idx=None, sample_idx=None, 
+                 clip_soft=384., track_transform=3./4., track_scale=0.3, mode='scoring'):
+
+    # Check formatting
+    sequence_onehot = check_borzoi_sequence(sequence_onehot)
+
+    # Make predictions
+    prediction = np.concatenate([models[rep_idx](sequence_onehot).astype("float32") for rep_idx in range(len(models))], axis=1)
+
+    if sample_idx is not None:
+        prediction = prediction[..., sample_idx]
+
+    prediction = undo_transform(prediction, clip_soft=clip_soft, track_transform=track_transform, track_scale=track_scale).mean(1)
+
+    if bin_slice_idx is not None:
+        for idx_ in bin_slice_idx:
+            if idx_<0 or idx_>16383:
+                raise ValueError('bin slice idx is negative or > 16383')
+        prediction = prediction[:, bin_slice_idx]
+
+    # Average over sample heads and return batch predictions
+    if mode == 'scoring':
+        # To return a cumulative score or keep batch
+        prediction = np.mean(prediction, axis=-1).sum(axis=-1)
+
+        # Convert to scalar if single sequence
+        if prediction.shape[0]==1:
+            prediction=prediction[0]
+
+    return prediction
+
+def predict_RNA_expression(sequence_onehot, models=None, bin_slice_idx=None, 
+                           sample_idx=None, mode='scoring'):
 
     '''
     Predict RNA expression output.
 
     '''
-
-    # Check formatting
-    sequence_onehot = check_borzoi_sequence(sequence_onehot)
-
-    # This only works on a GPU
-    # Make sure sequence is formatted correctly with the mask and strandedness accoutned for
-
-    # Make predictions
-    prediction = np.concatenate([models[rep_idx](sequence_onehot)[:, None, ...].astype("float32") for rep_idx in np.arange(len(models))], axis=1)
-
-    if sample_idx is not None:
-        prediction = prediction[..., sample_idx]
-
-    prediction = undo_transform(prediction, clip_soft=384., track_transform=3./4., track_scale=0.3).mean(1)
-
-    if gene_slice_idx is not None:
-        prediction = prediction[:, gene_slice_idx]
-
-    # Average over sample heads and return scalar
-    if mode=='scoring':
-        prediction = np.mean(prediction,-1).sum(-1)
-
-    # Single-sample #TODO: Implement batch processing
-    prediction = prediction[0]
+    prediction = predict_func(sequence_onehot, models, bin_slice_idx, sample_idx, mode,
+                              clip_soft=384., track_transform=3./4., track_scale=0.3)
 
     return prediction
 
-def compute_attribution(sequence_onehot, models=None, cuda=False):
+def predict_CAGE_expression(sequence_onehot, models=None, bin_slice_idx=None, 
+                            sample_idx=None, mode='scoring'):
+
+    '''
+    Predict CAGE expression output.
+
+    '''
+
+    prediction = predict_func(sequence_onehot, models, bin_slice_idx, sample_idx, mode,
+                              clip_soft=384., track_transform=3./4., track_scale=1)
+
+    return prediction
+
+def predict_DNASE_accessibility(sequence_onehot, models=None, bin_slice_idx=None, 
+                                sample_idx=None, mode='scoring'):
+
+    '''
+    Predict DNASE output.
+
+    '''
+    prediction = predict_func(sequence_onehot, models, bin_slice_idx, sample_idx, mode,
+                              clip_soft=32., track_transform=3./4., track_scale=2.)
+
+    return prediction
+
+def compute_attribution(sequence_onehot, models=None, bin_slice_idx=None, sample_idx=None, cuda=False):
 
     '''
     Computed Input X Gradient attributions.

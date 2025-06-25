@@ -204,7 +204,7 @@ def compute_gene_boundaries(gtf_file):
 
             attributes_dict = parse_gtf_attributes(attributes)
             gene_name = attributes_dict.get('gene_name', attributes_dict.get('gene_id', 'Unknown'))
-
+            
             start = int(start)
             end = int(end)
 
@@ -213,10 +213,14 @@ def compute_gene_boundaries(gtf_file):
                     'chromosome': chromosome,
                     'start': start,
                     'end': end,
-                    'strand': strand
+                    'strand': strand,
+                    'exons': []
                 }
             else:
                 gene_boundaries[gene_name]['start'] = min(gene_boundaries[gene_name]['start'], start)
                 gene_boundaries[gene_name]['end'] = max(gene_boundaries[gene_name]['end'], end)
+
+            if feature_type.lower() == 'exon':
+                gene_boundaries[gene_name]['exons'].append((start, end))
 
     return gene_boundaries
