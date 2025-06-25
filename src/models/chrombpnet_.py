@@ -33,10 +33,10 @@ def load_trained_model(model_path):
     return model
 
 #TODO: Modify to work with batches
-def predict_accessibility(sequence_onehot, models=None, mode='count'):
+def predict_accessibility(sequence_onehot, models=None):
 
     '''
-    Predict mean profile head output.
+    Predict output.
 
     '''
     sequence_onehot = check_bpnet_sequence(sequence_onehot)
@@ -47,12 +47,8 @@ def predict_accessibility(sequence_onehot, models=None, mode='count'):
     predictions=[]
     for model in models:
 
-        if mode=='profile':
-            prediction = model.predict_on_batch(sequence_onehot)[0]
-            prediction = prediction.mean(axis=-1)
-        elif mode=='count':
-            prediction = model.predict_on_batch(sequence_onehot)[1]
-            prediction = prediction.flatten()
+        prediction = model.predict_on_batch(sequence_onehot)[1]
+        prediction = prediction.flatten()
         predictions.append(np.exp(prediction))
     
     if len(models)>1:
