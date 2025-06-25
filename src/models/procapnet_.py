@@ -18,14 +18,40 @@ def load_trained_model(model_path, cuda=False):
     '''
 
     if cuda:
-        model = torch.load(model_path).cuda()
+        model = torch.load_from(model_path).cuda()
     else:
         model = torch.load(model_path)
 
     return model
 
+def process_predictions(pred_profiles_logits, pred_logcounts):
+
+    pred_profiles = np.exp(pred_profiles_logits)
+    pred_profiles /= pred_profiles.sum()
+
+    pred_counts = np.exp(pred_logcounts)
+
+    return pred_profiles, pred_counts
+
+def compute_strand_counts(pred_profiles, pred_counts, strand=0):
+    
+    # Distribute counts over strands
+    pred_profiles_counts = pred_profiles*pred_counts
+    positive_counts = pred_profiles_counts[:,0].sum()
+    negative_counts = pred_profiles_counts[:,1].sum()
+
+    # Return stranded counts
+    if strand==0:
+        pred_counts = positive_counts + negative_counts
+    elif strand==-1:
+        pred_counts = negative_counts
+    elif strand==1:
+        pred_counts = positive_counts
+
+    return pred_counts
+
 #TODO: Modify to work with batches
-def predict_transcription(sequence_onehot, models=None, strand=0, cuda=False):
+def predict_transcription(sequence_onehot, models=None, strand=0, rc=True, cuda=False):
 
     '''
     Predict output.
@@ -40,19 +66,27 @@ def predict_transcription(sequence_onehot, models=None, strand=0, cuda=False):
     predictions=[]
     for model in models:
 
+        # Predict counts and profiles
         with torch.no_grad():
             sequence_onehot = torch.tensor(sequence_onehot, dtype=torch.float32)
             if cuda:
                 sequence_onehot = sequence_onehot.cuda()
-            pred_profiles, pred_logcounts = model.predict(sequence_onehot)
-            rc_pred_profiles, rc_pred_logcounts = model.predict(torch.flip(sequence_onehot, [-1, -2]))
+            pred_profiles_logits, pred_logcounts = model.predict(sequence_onehot)
+            rc_pred_profiles_logits, rc_pred_logcounts = model.predict(torch.flip(sequence_onehot, [-1, -2]))
 
-        if strand>0:        
-            prediction = np.exp(pred_logcounts)
-        elif strand<0:
-            prediction = np.exp(rc_pred_logcounts)
-        else:
-            prediction = np.exp(pred_logcounts) + np.exp(rc_pred_logcounts)
+        # Process predictions
+        pred_profiles, pred_counts = process_predictions(pred_profiles_logits, pred_logcounts)
+        rc_pred_profiles, rc_pred_counts = process_predictions(rc_pred_profiles_logits, rc_pred_logcounts)
+
+        # Compute stranded counts
+        pred_counts = compute_strand_counts(pred_profiles, pred_counts, strand)
+        rc_pred_counts = compute_strand_counts(rc_pred_profiles, rc_pred_counts, strand*-1)
+
+        # Return predictions
+        if not rc:      
+            prediction = pred_counts
+        elif rc:
+            prediction = pred_counts + rc_pred_counts
             prediction = prediction/2
 
         predictions.append(prediction)
@@ -133,6 +167,8 @@ def compute_attribution(sequence_onehot, models=None, num_shufs=25,
         return_dicts = count_scores_dicts
     elif typ=='profile':
         return_dicts = profile_scores_dicts
+    elif typ=='complete':
+        return_dicts = (count_scores_dicts, profile_scores_dicts)
 
     if mode=='scoring': 
         raise NotImplemnetedError()
