@@ -34,9 +34,15 @@ def main(*model_paths,
                        'INS_WT' : 0.025, 
                        'DEL_WT' : 0.025},
          output_path=None,
+         strand=None,
          take_reverse_complement=False,
          add_mask=None,
-         sample_idx=None):
+         sample_idx=None,
+         sample_type=None,
+         bin_slice_idx=None,
+         params_file=None,
+         targets_file=None,
+         ontology_terms=None):
 
     # Setup model specific params and prediction func
     add_args = {}
@@ -58,6 +64,8 @@ def main(*model_paths,
         predict_func = predict_transcription
         model_window = 2114
 
+        add_args = {'strand':strand}
+
     elif model_type=='decima':
 
         from models.decima_ import load_trained_model as load_decima_model
@@ -67,7 +75,35 @@ def main(*model_paths,
         predict_func = predict_expression
         model_window = 524288
         add_args = {'add_mask':add_mask, 'sample_idx':sample_idx}
-            
+
+    elif model_type=='borzoi':
+
+        from models.borzoi_ import load_trained_model as load_borzoi_model
+        from models.borzoi_ import predict_RNA_expression, predict_CAGE_expression, predict_DNASE_accessibility
+
+        models = [load_borzoi_model(model_path, params_file, targets_file, rc=True) \
+                                    for model_path in model_paths]
+        if sample_type=='RNA':
+            predict_func = predict_RNA_expression
+        elif sample_type=='CAGE':
+            predict_func = predict_CAGE_expression
+        elif sample_type=='DNASE':
+            predict_func = predict_DNASE_accessibility
+
+        model_window = 524288
+        add_args = {'bin_slice_idx': bin_slice_idx, 'sample_idx':sample_idx}
+
+    elif model_type=='alphagenome':
+        from models.alphagenome_ import load_model
+        from models.alphagenome_ import predict_func
+
+        models = load_model(model_paths[0])
+        model_window = 1048576
+        add_args = {'strand': strand, 
+                    'slice_idx':bin_slice_idx, 
+                    'ontology_terms': ontology_terms, 
+                    'output_type': sample_type}
+
     # Extract reference sequence
     window_padding=100
     fse = FastaStringExtractor(fasta_file)
@@ -76,7 +112,6 @@ def main(*model_paths,
                              window_padding=window_padding)
     if take_reverse_complement:
         ref_seq = reverse_complement(ref_seq)
-
 
     # Make randomn insert sequence if none is provided
     if insert_sequence is None:
@@ -140,19 +175,33 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('model_paths', nargs='+', type=str)
-    parser.add_argument('--model_type', choices=['chrombpnet', 'procapnet', 'decima'], default='chrombpnet')
+    parser.add_argument('--model_type', choices=['chrombpnet', 'procapnet', 'decima', 'borzoi', 'alphagenome'], default='chrombpnet')
     parser.add_argument('--fasta_file', type=str)
     parser.add_argument('--chromosome', type=str)    
     parser.add_argument('--insert_coord', type=int)
     parser.add_argument('--insert_sequence', default=None, type=str)
-    parser.add_argument('--insert_offset_range', nargs='+', type=int)
+    parser.add_argument('--insert_offset_range', default=(-2, 2), nargs='+', type=int)
+    parser.add_argument('--max_overwritten_wt_bp', default=3, type=int)
     parser.add_argument('--num_iters', default=1000, type=int)
     parser.add_argument('-o','--output_path', default=None, type=str)
+
+    # ProCAPNet specific arguments
+    parser.add_argument('--strand', choices=[0, 1, -1], default=0, type=int)    
 
     # Decima specific aeguments
     parser.add_argument('--reverse_complement', action='store_true')
     parser.add_argument('--add_mask', nargs='+', type=int)  
     parser.add_argument('--sample_idx', nargs='+', type=int)  
+
+    # Borzoi specific arguments
+    parser.add_argument('--sample_type', choices=['RNA', 'CAGE', 'DNASE'], default='RNA')  
+    parser.add_argument('--bin_slice_idx', nargs='+', type=int)  
+    parser.add_argument('--params_file', default=None, type=str)
+    parser.add_argument('--targets_file', default=None, type=str)
+
+    # Alphagenome specific arguments
+    parser.add_argument('--ontology_terms', nargs='+', type=str)
+
 
     args = parser.parse_args()
 
@@ -167,10 +216,17 @@ if __name__=='__main__':
                        insert_coord=args.insert_coord, 
                        insert_sequence=args.insert_sequence, 
                        insert_offset_range=args.insert_offset_range,
+                       max_overwritten_wt_bp=args.max_overwritten_wt_bp,
                        n_iters=args.num_iters, output_path=args.output_path,
+                       strand=args.strand,
                        take_reverse_complement=args.reverse_complement,
                        add_mask=args.add_mask,
-                       sample_idx=args.sample_idx)
+                       sample_idx=args.sample_idx,
+                       sample_type=args.sample_type,
+                       bin_slice_idx=args.bin_slice_idx,
+                       params_file=args.params_file,
+                       targets_file=args.targets_file,
+                       ontology_terms=args.ontology_terms)
 
     # Save output to file
     if args.output_path is not None:
