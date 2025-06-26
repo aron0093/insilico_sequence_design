@@ -41,6 +41,9 @@ class FastaStringExtractor:
 def one_hot_encode(sequence):
     return kipoiseq.transforms.functional.one_hot_dna(sequence).astype(np.float32)
 
+def one_hot_decode(sequence_onehot):
+    return kipoiseq.transforms.functional.one_hot2string(sequence_onehot, alphabet=('A', 'C', 'G', 'T'))
+
 # Make reverse complement
 def reverse_complement(seq):
     complement = {
