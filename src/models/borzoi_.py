@@ -89,7 +89,7 @@ def predict_func(sequence_onehot, models=None, bin_slice_idx=None, sample_idx=No
     sequence_onehot = check_borzoi_sequence(sequence_onehot)
 
     # Make predictions
-    prediction = np.concatenate([models[rep_idx](sequence_onehot).astype("float32") for rep_idx in range(len(models))], axis=1)
+    prediction = np.concatenate([models[rep_idx](sequence_onehot)[:, None, ...].astype("float32") for rep_idx in range(len(models))], axis=1)
 
     if sample_idx is not None:
         prediction = prediction[..., sample_idx]
@@ -120,7 +120,7 @@ def predict_RNA_expression(sequence_onehot, models=None, bin_slice_idx=None,
     Predict RNA expression output.
 
     '''
-    prediction = predict_func(sequence_onehot, models, bin_slice_idx, sample_idx, mode,
+    prediction = predict_func(sequence_onehot, models, bin_slice_idx, sample_idx, mode=mode,
                               clip_soft=384., track_transform=3./4., track_scale=0.3)
 
     return prediction
@@ -133,7 +133,7 @@ def predict_CAGE_expression(sequence_onehot, models=None, bin_slice_idx=None,
 
     '''
 
-    prediction = predict_func(sequence_onehot, models, bin_slice_idx, sample_idx, mode,
+    prediction = predict_func(sequence_onehot, models, bin_slice_idx, sample_idx, mode=mode,
                               clip_soft=384., track_transform=3./4., track_scale=1)
 
     return prediction
@@ -145,7 +145,7 @@ def predict_DNASE_accessibility(sequence_onehot, models=None, bin_slice_idx=None
     Predict DNASE output.
 
     '''
-    prediction = predict_func(sequence_onehot, models, bin_slice_idx, sample_idx, mode,
+    prediction = predict_func(sequence_onehot, models, bin_slice_idx, sample_idx, mode=mode,
                               clip_soft=32., track_transform=3./4., track_scale=2.)
 
     return prediction
