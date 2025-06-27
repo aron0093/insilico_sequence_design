@@ -37,6 +37,13 @@ class FastaStringExtractor:
     def close(self):
         return self.fasta.close()
 
+# Extract sequence center
+def extract_center(sequence_, center_pos, bp=50):
+
+    sequence_center_ = sequence_[center_pos-int(bp/2):center_pos+int(bp/2)]
+
+    return sequence_center_
+
 # One hot encode DNA sequence
 def one_hot_encode(sequence):
     return kipoiseq.transforms.functional.one_hot_dna(sequence).astype(np.float32)
