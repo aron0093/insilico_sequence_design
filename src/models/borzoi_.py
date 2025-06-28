@@ -134,7 +134,7 @@ def predict_CAGE_expression(sequence_onehot, models=None, bin_slice_idx=None,
     '''
 
     prediction = predict_func(sequence_onehot, models, bin_slice_idx, sample_idx, mode=mode,
-                              clip_soft=384., track_transform=3./4., track_scale=1)
+                              clip_soft=384., track_transform=1., track_scale=1)
 
     return prediction
 
@@ -146,7 +146,7 @@ def predict_DNASE_accessibility(sequence_onehot, models=None, bin_slice_idx=None
 
     '''
     prediction = predict_func(sequence_onehot, models, bin_slice_idx, sample_idx, mode=mode,
-                              clip_soft=32., track_transform=3./4., track_scale=2.)
+                              clip_soft=32., track_transform=1., track_scale=2.)
 
     return prediction
 

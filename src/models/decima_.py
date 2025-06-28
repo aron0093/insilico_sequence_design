@@ -5,6 +5,8 @@ import sys # Adjust PATH or install
 sys.path.append('../../../decima/src/decima')
 
 from lightning import LightningModel
+from captum.attr import InputXGradient
+
 
 def check_decima_sequence(decima_sequence_onehot, add_mask=None):
 
@@ -94,16 +96,49 @@ def predict_expression(decima_sequence_onehot, models=None, add_mask=None, sampl
 
     return prediction
 
-def compute_attribution(sequence_onehot, models=None, strand=0, cuda=False):
+def compute_attribution(sequence_onehot, models=None, add_mask=None, sample_idx=None):
 
     '''
     Read precomputed Input X Gradient attributions.
     
     '''
- 
-    #TODO: Extract per sequence (no h5) version
-    #TODO: Add options to select which sample head
-    # Adapt from src/decima/interpret.py
+
+    # # TODO: Shift adding mask to common function used in predciton and attribution
+    # # Check formatting
+    # decima_sequence_onehot = check_decima_sequence(decima_sequence_onehot, add_mask)
+
+    # if add_mask is not None:
+    #     if len(add_mask)!=2:
+    #         raise ValueError('add_mask is improperly specified.')
+
+    #     center_pos = int(decima_sequence_onehot.shape[-1]/2)
+
+    #     mask_start = add_mask[0]
+    #     mask_end = add_mask[1]
+    #     mask_len = mask_start-mask_end
+
+    #     mask = np.zeros(decima_sequence_onehot.shape[-1])
+    #     mask[mask_start:mask_end] = 1
+    #     mask = np.expand_dims(np.expand_dims(mask,0),0)
+    #     mask = np.repeat(mask,decima_sequence_onehot.shape[0],0)
+
+    #     decima_sequence_onehot = np.append(decima_sequence_onehot, 
+    #                                        mask, 1)
+
+    # # This only works on a GPU
+    # # Make sure sequence is formatted correctly with the mask and strandedness accoutned for
+    # decima_sequence_onehot = torch.from_numpy(decima_sequence_onehot).float()
+    # decima_sequence_onehot = decima_sequence_onehot.cuda()
+
+    # attributions = []
+    # for model in models:
+    #     model.add_transform(Aggregate(tasks=sample_idx, task_aggfunc="mean", model=model))
+    #     attributer = InputXGradient(model)
+    #     with torch.no_grad():
+    #         attributions.append(attributer.attribute(decima_sequence_onehot)[:4].cpu().numpy())
+    # attributions = np.stack(attributions).mean(0).sum(0)
+
+    # return attributions
 
     raise NotImplementedError()
 
