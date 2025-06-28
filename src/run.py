@@ -6,7 +6,7 @@ from tqdm.auto import tqdm
 import numpy as np
 import pandas as pd
 
-from _utils import FastaStringExtractor, reverse_complement
+from _utils import FastaStringExtractor, reverse_complement, extract_center
 from _sequence import extract_refseq
 from _annealing import run_simulated_annealing
 
@@ -158,6 +158,7 @@ def main(*model_paths,
         edit_record.index.name = 'iteration'
 
         edit_record['reference_sequence'] = edit_record['reference_sequence'].apply(lambda x: x[window_padding: -window_padding])
+        edit_record['reference_sequence'] = edit_record['reference_sequence'].apply(lambda x: extract_center(x, model_window//2, bp=min(10000, model_window)))
         edit_record['fitness'] = fitness_
         edit_record['score'] = score_
         edit_record['temperature'] = temperature_
@@ -237,7 +238,7 @@ if __name__=='__main__':
         plot_fitness(edit_record, ax=axs[0])
         plot_temp_scaling(edit_record, ax=axs[1])
 
-        plt.savefig(args.output_path.split('.')[0]+'.png')
+        plt.savefig(args.output_path+'.png')
 
 
 
