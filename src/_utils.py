@@ -4,6 +4,8 @@ import pyfaidx
 import kipoiseq
 import itertools
 
+from tqdm.auto import tqdm
+
 # Extract sequence from FASTA file
 # Modified from: https://colab.research.google.com/github/deepmind/\
 # deepmind_research/blob/master/enformer/enformer-usage.ipynb
@@ -69,13 +71,13 @@ def reverse_complement(seq):
     return seq
 
 # Return all mutations
-def edit_distance_one(seq_onehot, model_window=None, start_coord=None):
+def edit_distance_one(seq_onehot, edit_window=None, start_coord=None):
 
     if seq_onehot.ndim==2:
         seq_onehot = np.expand_dims(seq_onehot,0)
     
-    if model_window is not None:
-        seq_shape_ = model_window
+    if edit_window is not None:
+        seq_shape_ = edit_window
     else:
         seq_shape_ = seq_onehot.shape[1]
 
@@ -94,15 +96,15 @@ def edit_distance_one(seq_onehot, model_window=None, start_coord=None):
 
 # Perform ISM with some seq to effect prediction function
 def saturation_mutagenesis(predict_func, models, seq_onehot, 
-                           model_window=2114, start_coord=None, 
+                           edit_window=250, start_coord=None, 
                            batch_size=32, **kwargs):
 
 	y0 = predict_func(seq_onehot, models=models, **kwargs)
-	X_ = edit_distance_one(seq_onehot, model_window)
+	X_ = edit_distance_one(seq_onehot, edit_window, start_coord)
 
     #TODO: Enable batch processing in predict_func
 	y_hats = []
-	for idx in range(X_.shape[0]):
+	for idx in tqdm(range(X_.shape[0])):
 		y_hat = predict_func(X_[idx], models=models, **kwargs)
 		y_hats.append(y_hat)
 
