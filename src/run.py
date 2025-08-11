@@ -113,7 +113,7 @@ def main(*model_paths,
     if take_reverse_complement:
         ref_seq = reverse_complement(ref_seq)
 
-    # Make randomn insert sequence if none is provided
+    # Make randomn insert sequence if none is provided #TODO: Edit before revcomp? or..
     if insert_sequence is None:
         insert_sequence = ''.join([np.random.choice(['A', 'C', 'G', 'T']) for j in \
                                    range(np.random.randint(5, max_edited_bp+1))])
@@ -143,7 +143,7 @@ def main(*model_paths,
                           max_edited_bp=max_edited_bp, 
                           max_overwritten_wt_bp=max_overwritten_wt_bp, 
                           insert_offset_range=insert_offset_range, 
-                          models=models, **add_args)
+                          models=models, **add_args) # TODO: Decima mask adjustment if revcomp after edit
 
         # Save steps
         temperature_.append(annealing.temperature)
@@ -152,7 +152,7 @@ def main(*model_paths,
         score_.append(annealing.score)
 
         edit_record = pd.DataFrame(edit_history_, columns=['reference_sequence', 
-                                                           'insert_sequence', 
+                                                           'insert_sequence', # TODO: ..Take revcomp if revcomp ref?
                                                            'insert_offset', 
                                                            'overwritten_wildtype_basepairs'])
         edit_record.index.name = 'iteration'
@@ -182,6 +182,7 @@ if __name__=='__main__':
     parser.add_argument('--insert_coord', type=int)
     parser.add_argument('--insert_sequence', default=None, type=str)
     parser.add_argument('--insert_offset_range', default=(-2, 2), nargs='+', type=int)
+    parser.add_argument('--max_edited_bp', default=10, type=int)
     parser.add_argument('--max_overwritten_wt_bp', default=3, type=int)
     parser.add_argument('--num_iters', default=1000, type=int)
     parser.add_argument('-o','--output_path', default=None, type=str)
@@ -217,6 +218,7 @@ if __name__=='__main__':
                        insert_coord=args.insert_coord, 
                        insert_sequence=args.insert_sequence, 
                        insert_offset_range=args.insert_offset_range,
+                       max_edited_bp=args.max_edited_bp,
                        max_overwritten_wt_bp=args.max_overwritten_wt_bp,
                        n_iters=args.num_iters, output_path=args.output_path,
                        strand=args.strand,
