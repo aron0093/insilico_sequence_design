@@ -50,7 +50,7 @@ def undo_transform(y, clip_soft=384., track_transform=3./4., track_scale=0.3):
 
     return y
 
-def load_trained_model(model_path, params_file, targets_file, rc=False):
+def load_trained_model(model_path, params_file, targets_file, rc=True):
     
     '''
     Load pretrained Borzoi model.
