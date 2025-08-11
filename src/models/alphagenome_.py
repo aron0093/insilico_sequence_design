@@ -32,6 +32,7 @@ def predict_func(sequence, models, strand=0, slice_idx=None, ontology_terms=None
     # Setup output types
     output_type_dict = {'RNA': dna_client.OutputType.RNA_SEQ,
                         'CAGE': dna_client.OutputType.CAGE,
+                        'PROCAP': dna_client.OutputType.PROCAP,
                         'ATAC': dna_client.OutputType.ATAC,
                         'DNASE': dna_client.OutputType.DNASE}
     requested_outputs = [output_type_dict[output_type]]
@@ -44,13 +45,15 @@ def predict_func(sequence, models, strand=0, slice_idx=None, ontology_terms=None
         prediction = outputs.rna_seq.values[slice_idx]
     elif output_type=='CAGE':
         prediction = outputs.cage.values[slice_idx]
+    elif output_type=='PROCAP':
+        prediction = outputs.procap.values[slice_idx]
     elif output_type=='ATAC':
         prediction = outputs.atac.values[slice_idx]
     elif output_type=='DNASE':
         prediction = outputs.dnase.values[slice_idx]
 
     # Choose strand for stranded signals
-    if output_type=='RNA' or output_type=='CAGE':
+    if output_type=='RNA' or output_type=='CAGE' or output_type=='PROCAP':
         if strand==1:
             prediction = prediction[:,0]
         elif strand==-1:
